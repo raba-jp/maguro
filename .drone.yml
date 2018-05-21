@@ -11,4 +11,5 @@ pipeline:
     webhook: https://hooks.slack.com/services/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
     channel: ping_github_ci
     when:
+      event: pull_request
       status: [ success, failure ]
