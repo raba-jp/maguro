@@ -6,21 +6,23 @@ import (
 	"strings"
 
 	"github.com/nlopes/slack"
+	"github.com/vivitInc/maguro/drone"
 )
 
 const (
 	// action is used for slack attament action.
-	actionSelect  = "select"
-	actionRestart = "restart"
-	actionKill    = "kill"
-	actionCancel  = "cancel"
+	actionRepoSelect   = "repo_select"
+	actionBuildSelect  = "build_select"
+	actionBuildRestart = "build_restart"
+	actionBuildKill    = "build_kill"
+	actionCancel       = "cancel"
 )
 
 type SlackListener struct {
 	client    *slack.Client
 	botID     string
 	channelID string
-	drone     *Drone
+	drone     *drone.Drone
 }
 
 func (s *SlackListener) ListenAndResponse() {
@@ -54,34 +56,49 @@ func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
 
 	// Parse message
 	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
-	if len(m) == 0 || m[0] != "build" {
+	if len(m) == 0 {
 		return fmt.Errorf("invalid message")
 	}
 
-	builds := s.drone.GetRunningBuildNumber()
-	options := []slack.AttachmentActionOption{}
-	for _, build := range builds {
-		options = append(options, slack.AttachmentActionOption{
-			Text:  fmt.Sprintf("%d: %s %s", build.Number, build.Commit, build.Message),
-			Value: fmt.Sprintf("%d", build.Number),
-		})
+	switch m[0] {
+	case "build":
+		if err := s.handleBuild(ev); err != nil {
+			log.Printf("failed to handle build: %s", err)
+		}
+	case "tomoka", "ともか":
+		if err := s.handleTomoka(ev); err != nil {
+			log.Printf("failed to handle tomoka: %s", err)
+		}
 	}
 
-	// value is passed to message handler when request is approved.
+	return nil
+}
+
+func (s *SlackListener) handleBuild(ev *slack.MessageEvent) error {
+	repos, err := s.drone.GetRepositories()
+	if err != nil {
+		return fmt.Errorf("failed to get repositories: %s", err)
+	}
+
+	options := []slack.AttachmentActionOption{}
+	for _, repo := range repos {
+		options = append(options, slack.AttachmentActionOption{
+			Text:  repo.FullName(),
+			Value: repo.FullName(),
+		})
+	}
 	attachment := slack.Attachment{
-		Text:       "どのビルド？",
-		Color:      "#f9a41b",
+		Text:       "どのリポジトリにする？",
 		CallbackID: "build",
 		Actions: []slack.AttachmentAction{
 			{
-				Name:    actionSelect,
+				Name:    actionRepoSelect,
 				Type:    "select",
 				Options: options,
 			},
-
 			{
 				Name:  actionCancel,
-				Text:  "Cancel",
+				Text:  "キャンセル",
 				Type:  "button",
 				Style: "danger",
 			},
@@ -97,6 +114,20 @@ func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
 	if _, _, err := s.client.PostMessage(ev.Channel, "", params); err != nil {
 		return fmt.Errorf("failed to post message: %s", err)
 	}
+	return nil
+}
 
+func (s *SlackListener) handleTomoka(ev *slack.MessageEvent) error {
+	params := slack.PostMessageParameters{
+		Attachments: []slack.Attachment{
+			{
+				Title:    "tomoka",
+				ImageURL: "https://bot.dev.hinata.me/maguro/public/tomoka.png",
+			},
+		},
+	}
+	if _, _, err := s.client.PostMessage(ev.Channel, "", params); err != nil {
+		return fmt.Errorf("failed to post message: %s", err)
+	}
 	return nil
 }
