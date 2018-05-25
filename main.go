@@ -48,9 +48,14 @@ func _main(args []string) int {
 	}
 	go slackListener.ListenAndResponse()
 
-	http.Handle("/interaction", interactionHandler{
+	http.Handle("/maguro/interaction", interactionHandler{
 		verificationToken: env.VerificationToken,
 		drone:             drone,
+	})
+	http.HandleFunc("/maguro/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{\"status\": \"OK\"}"))
 	})
 
 	log.Printf("[INFO] Server listening on :%s", env.Port)

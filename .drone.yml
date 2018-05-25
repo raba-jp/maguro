@@ -3,6 +3,8 @@ pipeline:
     image: plugins/docker
     repo: vivit/maguro
     secrets: [ docker_username, docker_password ]
+    tags:
+      - ${DRONE_PULL_REQUEST}
     when:
       event: pull_request
 
