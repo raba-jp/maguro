@@ -52,6 +52,11 @@ func _main(args []string) int {
 		verificationToken: env.VerificationToken,
 		drone:             drone,
 	})
+	http.HandleFunc("/maguro/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{\"status\": \"OK\"}"))
+	})
 
 	log.Printf("[INFO] Server listening on :%s", env.Port)
 	if err := http.ListenAndServe(":"+env.Port, nil); err != nil {
