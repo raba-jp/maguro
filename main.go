@@ -48,7 +48,7 @@ func _main(args []string) int {
 	}
 	go slackListener.ListenAndResponse()
 
-	http.Handle("/interaction", interactionHandler{
+	http.Handle("/maguro/interaction", interactionHandler{
 		verificationToken: env.VerificationToken,
 		drone:             drone,
 	})
