@@ -61,7 +61,7 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		value := action.SelectedOptions[0].Value
 
 		originalMessage := message.OriginalMessage
-		originalMessage.Attachments[0].Text = fmt.Sprintf("%sのビルドを再実行するよ？", strings.Title(value))
+		originalMessage.Attachments[0].Text = fmt.Sprintf("%sをどうする？", strings.Title(value))
 		originalMessage.Attachments[0].Actions = []slack.AttachmentAction{
 			{
 				Name:  actionRestart,
