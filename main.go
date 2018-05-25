@@ -58,6 +58,13 @@ func _main(args []string) int {
 		w.Write([]byte("{\"status\": \"OK\"}"))
 	})
 
+	http.Handle("/maguro/public/", http.StripPrefix("/maguro/public/", http.FileServer(http.Dir("./public"))))
+	http.HandleFunc("/maguro/toyama", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{\"text\": \"https://bot.dev.hinata.me/maguro/public/toyama.jpg\", \"response_type\": \"in_channel\"}"))
+	})
+
 	log.Printf("[INFO] Server listening on :%s", env.Port)
 	if err := http.ListenAndServe(":"+env.Port, nil); err != nil {
 		log.Printf("[ERROR] %s", err)
