@@ -54,7 +54,7 @@ func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
 
 	// Parse message
 	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
-	if len(m) == 0 || m[0] != "hey" {
+	if len(m) == 0 || m[0] != "build" {
 		return fmt.Errorf("invalid message")
 	}
 
