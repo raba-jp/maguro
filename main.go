@@ -58,11 +58,22 @@ func _main(args []string) int {
 		w.Write([]byte("{\"status\": \"OK\"}"))
 	})
 
+	// Slack slash commmands
 	http.Handle("/maguro/public/", http.StripPrefix("/maguro/public/", http.FileServer(http.Dir("./public"))))
 	http.HandleFunc("/maguro/toyama", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{\"text\": \"https://bot.dev.hinata.me/maguro/public/toyama.jpg\", \"response_type\": \"in_channel\"}"))
+		w.Write([]byte("{\"attachments\": [{\"title\": \"toyama\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/toyama.jpg\"}], \"response_type\": \"in_channel\"}"))
+	})
+	http.HandleFunc("/maguro/tomoka", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{\"attachments\": [{\"title\": \"tomoka\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/tomoka.png\"}], \"response_type\": \"in_channel\"}"))
+	})
+	http.HandleFunc("/maguro/loading", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{\"attachments\": [{\"title\": \"loading\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/loading.jpg\"}], \"response_type\": \"in_channel\"}"))
 	})
 
 	log.Printf("[INFO] Server listening on :%s", env.Port)
