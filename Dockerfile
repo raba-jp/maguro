@@ -16,4 +16,5 @@ RUN apk add --update --no-cache ca-certificates
 COPY --from=builder /go/src/github.com/vivitInc/maguro/maguro /maguro
 COPY --from=builder /go/src/github.com/vivitInc/maguro/public /public
 EXPOSE 3000
+WORKDIR /
 ENTRYPOINT ["/maguro"]
