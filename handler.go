@@ -90,35 +90,25 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&originalMessage)
 		return
 	case actionRestart:
-		title := fmt.Sprintf("再実行したよ！")
-
-		value := action.SelectedOptions[0].Value
-		number, err := strconv.Atoi(value)
-		if err != nil {
-			title = "再実行できなかった..."
-			responseMessage(w, message.OriginalMessage, title, "")
-			return
+		if number, err := strconv.Atoi(action.Value); err != nil {
+			responseMessage(w, message.OriginalMessage, "再実行できなかった...", "")
+		} else {
+			if droneErr := h.drone.RestartBuild(number); droneErr != nil {
+				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを再実行できなかった...", number), "")
+			} else {
+				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを再実行したよ！", number), "")
+			}
 		}
-		if droneErr := h.drone.RestartBuild(number); droneErr != nil {
-			title = "再実行できなかった..."
-		}
-		responseMessage(w, message.OriginalMessage, title, "")
-		return
 	case actionKill:
-		title := fmt.Sprintf("止めたよ！")
-
-		value := action.SelectedOptions[0].Value
-		number, err := strconv.Atoi(value)
-		if err != nil {
-			title = "止めるの失敗した..."
-			responseMessage(w, message.OriginalMessage, title, "")
-			return
+		if number, err := strconv.Atoi(action.Value); err != nil {
+			responseMessage(w, message.OriginalMessage, "止めるの失敗した...", "")
+		} else {
+			if droneErr := h.drone.KillBuild(number); droneErr != nil {
+				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを止めるの失敗した...", number), "")
+			} else {
+				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを止めたよ！", number), "")
+			}
 		}
-		if droneErr := h.drone.KillBuild(number); droneErr != nil {
-			title = "止めるの失敗した..."
-		}
-		responseMessage(w, message.OriginalMessage, title, "")
-		return
 	case actionCancel:
 		title := "やっぱりやめた！"
 		responseMessage(w, message.OriginalMessage, title, "")
