@@ -7,6 +7,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
+	"github.com/vivitInc/maguro/drone"
 )
 
 type envConfig struct {
@@ -18,7 +19,6 @@ type envConfig struct {
 	DroneToken        string `envconfig:"DRONE_TOKEN" required:"true"`
 	DroneHost         string `envconfig:"DRONE_HOST" required:"true"`
 	RepositoryOwner   string `envconfig:"REPOSITORY_OWNER" required:"true"`
-	RepositoryName    string `envconfig:"REPOSITORY_NAME" required:"true"`
 }
 
 func main() {
@@ -31,11 +31,10 @@ func _main(args []string) int {
 		log.Printf("[ERROR] Failed to process env var: %s", err)
 		return 1
 	}
-	drone := NewDrone(
+	d := drone.NewDrone(
 		env.DroneHost,
 		env.DroneToken,
 		env.RepositoryOwner,
-		env.RepositoryName,
 	)
 
 	log.Printf("[INFO] Start slack event listening")
@@ -44,13 +43,13 @@ func _main(args []string) int {
 		client:    client,
 		botID:     env.BotID,
 		channelID: env.ChannelID,
-		drone:     drone,
+		drone:     d,
 	}
 	go slackListener.ListenAndResponse()
 
 	http.Handle("/maguro/interaction", interactionHandler{
 		verificationToken: env.VerificationToken,
-		drone:             drone,
+		drone:             d,
 	})
 	http.HandleFunc("/maguro/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
