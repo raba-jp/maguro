@@ -66,3 +66,27 @@ func (d *Drone) RestartBuild(repo Repo, number int) error {
 func (d *Drone) KillBuild(repo Repo, number int) error {
 	return d.client.BuildKill(repo.Owner, repo.Name, number)
 }
+
+func (d *Drone) GetSucceededBuild(repo *Repo) []*Build {
+	list, err := d.client.BuildList(repo.Owner, repo.Name)
+	if err != nil {
+		return make([]*Build, 0)
+	}
+
+	builds := []*Build{}
+	for _, b := range list {
+		if b.Status == "success" {
+			builds = append(builds, &Build{
+				b.Number,
+				string([]rune(b.Commit)[:6]),
+				b.Message,
+			})
+		}
+	}
+	return builds
+}
+
+func (d *Drone) Deploy(repo Repo, number int, env string, params map[string]string) (*drone.Build, error) {
+	build, err := d.client.Deploy(repo.Owner, repo.Name, number, env, params)
+	return build, err
+}

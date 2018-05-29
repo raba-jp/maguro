@@ -7,18 +7,10 @@ import (
 
 	"github.com/nlopes/slack"
 	"github.com/vivitInc/maguro/build"
+	"github.com/vivitInc/maguro/config"
+	"github.com/vivitInc/maguro/deploy"
 	"github.com/vivitInc/maguro/drone"
 	"github.com/vivitInc/maguro/tomoka"
-)
-
-const (
-	// action is used for slack attament action.
-	actionRepoSelect       = "repo_select"
-	actionBuildSelect      = "build_select"
-	actionBuildRestart     = "build_restart"
-	actionBuildKill        = "build_kill"
-	actionDeployRepoSelect = "deploy_repo_select"
-	actionCancel           = "cancel"
 )
 
 type SlackListener struct {
@@ -26,6 +18,7 @@ type SlackListener struct {
 	botID     string
 	channelID string
 	drone     *drone.Drone
+	config    *config.Config
 }
 
 func (s *SlackListener) ListenAndResponse() {
@@ -71,6 +64,12 @@ func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
 		params := tomoka.Params{Slack: s.client, Event: ev}
 		if err := tomoka.Handle(&params); err != nil {
 			log.Printf("failed to handle tomoka: %s", err)
+			return err
+		}
+	case "deploy":
+		params := deploy.Params{Slack: s.client, Drone: s.drone, Event: ev, Repositories: &s.config.Repositories}
+		if err := deploy.SelectRepo(&params); err != nil {
+			log.Printf("failed to handle deploy: %s", err)
 			return err
 		}
 	}
