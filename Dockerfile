@@ -14,6 +14,7 @@ RUN make depend && make build
 FROM alpine:3.7
 RUN apk add --update --no-cache ca-certificates
 COPY --from=builder /go/src/github.com/vivitInc/maguro/maguro /maguro
+COPY --from=builder /go/src/github.com/vivitInc/maguro/config.yaml /config.yaml
 COPY --from=builder /go/src/github.com/vivitInc/maguro/public /public
 EXPOSE 3000
 WORKDIR /

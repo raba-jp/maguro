@@ -1,0 +1,20 @@
+channels:
+  - CA88ED2AK # ping_github_ci
+  - CA34H1551 # sandbox_dev
+
+repositories:
+  - name: 'vivitInc/maguro'
+    env:
+      - production
+  - name: 'vivitInc/magnolia'
+    env:
+      - ingress
+      - heapster
+      - drone
+  - name: 'vivitInc/vivit-corporate'
+    env:
+      - production
+  - name: 'vivitInc/clover'
+    env:
+      - build_production
+      - build_ci
