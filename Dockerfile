@@ -1,8 +1,8 @@
 FROM golang:1.10-alpine as builder
 
-ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
+ENV CGO_ENABLED=0 \
+      GOOS=linux \
+      GOARCH=amd64
 RUN apk add --update --no-cache \
       git \
       make && \

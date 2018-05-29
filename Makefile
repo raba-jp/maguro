@@ -1,4 +1,5 @@
-.PHONY: all
+.PHONY: all run clean
+SRCS    := $(shell find . -type f -name '*.go')
 
 all: depend build
 
@@ -9,7 +10,7 @@ depend:
 run:
 	go run *.go
 
-build:
+build: $(SRCS)
 	go build -a -installsuffix cgo
 
 clean:
