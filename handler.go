@@ -28,14 +28,14 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	action := message.Actions[0]
 	switch action.Name {
-	case build.ActionRepoSelect, build.ActionNumberSelect, build.ActionSelect, build.ActionRestart, build.ActionStop:
+	case build.ActionRepoSelect, build.ActionNumberSelect, build.ActionRestart, build.ActionStop:
 		params := build.Params{
 			Slack:   h.slack,
 			Drone:   h.drone,
 			Message: message,
 			Action:  &action,
 		}
-		message := build.Handle(action.Name, params)
+		message := build.Handle(params)
 
 		w.Header().Add("Content-type", "application/json")
 		w.WriteHeader(http.StatusOK)

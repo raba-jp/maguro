@@ -13,7 +13,6 @@ import (
 const (
 	ActionRepoSelect   = "build_action_repo_select"
 	ActionNumberSelect = "build_action_build_number_select"
-	ActionSelect       = "build_action_select"
 	ActionRestart      = "build_action_build_restart"
 	ActionStop         = "build_action_build_stop"
 	ActionCancel       = "build_action_cancel"
@@ -27,18 +26,23 @@ type Params struct {
 	Action  *slack.AttachmentAction
 }
 
-func Handle(action string, p Params) *slack.Message {
-	switch action {
-	case ActionNumberSelect:
+func Handle(p Params) *slack.Message {
+	action := *p.Action
+	switch action.Name {
+	case ActionRepoSelect:
 		return selectBuildNumber(&p)
-	case ActionSelect:
+	case ActionNumberSelect:
 		return selectAction(&p)
 	case ActionRestart:
 		return restart(&p)
 	case ActionStop:
 		return stop(&p)
+	default:
+		originalMessage := p.Message.OriginalMessage
+		originalMessage.Attachments[0].Text = "エラーが発生したよ！"
+		originalMessage.Attachments[0].Actions = []slack.AttachmentAction{}
+		return &originalMessage
 	}
-	return nil
 }
 
 func SelectRepo(p *Params) {
