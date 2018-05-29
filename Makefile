@@ -1,7 +1,5 @@
-.PHONY: all run clean
+.PHONY: run clean
 SRCS    := $(shell find . -type f -name '*.go')
-
-all: depend build
 
 depend:
 	go get -u github.com/golang/dep/cmd/dep
