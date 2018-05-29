@@ -2,21 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/nlopes/slack"
+	"github.com/vivitInc/maguro/build"
 	"github.com/vivitInc/maguro/drone"
 )
 
 // interactionHandler handles interactive message response.
 type interactionHandler struct {
-	slackClient       *slack.Client
+	slack             *slack.Client
 	verificationToken string
 	drone             *drone.Drone
 }
@@ -30,45 +28,20 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	action := message.Actions[0]
 	switch action.Name {
-	case actionRepoSelect:
-		m := h.handleRepoSelect(message, &action)
+	case build.ActionRepoSelect, build.ActionNumberSelect, build.ActionSelect, build.ActionRestart, build.ActionStop:
+		params := build.Params{
+			Slack:   h.slack,
+			Drone:   h.drone,
+			Message: message,
+			Action:  &action,
+		}
+		message := build.Handle(action.Name, params)
+
 		w.Header().Add("Content-type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&m)
+		json.NewEncoder(w).Encode(&message)
 		return
-	case actionBuildSelect:
-		m := h.handleBuildSelect(message, &action)
-		w.Header().Add("Content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&m)
-		return
-	case actionBuildRestart:
-		strs := strings.Split(action.Value, ":")
-		repo := drone.GetRepoFromFullName(strs[0])
-
-		if number, err := strconv.Atoi(strs[1]); err != nil {
-			responseMessage(w, message.OriginalMessage, "止めるの失敗した...", "")
-		} else {
-			if droneErr := h.drone.RestartBuild(*repo, number); droneErr != nil {
-				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを再実行できなかった...", number), "")
-			} else {
-				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを再実行したよ！", number), "")
-			}
-		}
-	case actionBuildKill:
-		strs := strings.Split(action.Value, ":")
-		repo := drone.GetRepoFromFullName(strs[0])
-
-		if number, err := strconv.Atoi(strs[1]); err != nil {
-			responseMessage(w, message.OriginalMessage, "止めるの失敗した...", "")
-		} else {
-			if droneErr := h.drone.KillBuild(*repo, number); droneErr != nil {
-				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを止めるの失敗した...", number), "")
-			} else {
-				responseMessage(w, message.OriginalMessage, fmt.Sprintf("%dを止めたよ！", number), "")
-			}
-		}
-	case actionCancel:
+	case build.ActionCancel:
 		title := "やっぱりやめた！"
 		responseMessage(w, message.OriginalMessage, title, "")
 		return
@@ -127,73 +100,4 @@ func (h *interactionHandler) validate(r *http.Request) (*slack.AttachmentActionC
 	}
 
 	return &message, 0
-}
-
-func (h *interactionHandler) handleRepoSelect(message *slack.AttachmentActionCallback, action *slack.AttachmentAction) *slack.Message {
-	// {owner}/{repo}
-	value := action.SelectedOptions[0].Value
-
-	repo := drone.GetRepoFromFullName(value)
-	log.Printf("owner: %s", repo.Owner)
-	log.Printf("name: %s", repo.Name)
-	builds := h.drone.GetRunningBuildNumber(repo)
-
-	options := []slack.AttachmentActionOption{}
-	for _, build := range builds {
-		options = append(options, slack.AttachmentActionOption{
-			Text:  fmt.Sprintf("%d: %s %s", build.Number, build.Commit, build.Message),
-			Value: fmt.Sprintf("%s:%d", repo.FullName(), build.Number),
-		})
-	}
-	log.Printf("%s", options)
-
-	originalMessage := message.OriginalMessage
-	originalMessage.Attachments[0].Text = fmt.Sprintf("%sのどのビルド？", value)
-	originalMessage.Attachments[0].Actions = []slack.AttachmentAction{
-		{
-			Name:    actionBuildSelect,
-			Type:    "select",
-			Options: options,
-		},
-		{
-			Name:  actionCancel,
-			Text:  "Cancel",
-			Type:  "button",
-			Style: "danger",
-		},
-	}
-
-	return &originalMessage
-}
-
-func (h *interactionHandler) handleBuildSelect(message *slack.AttachmentActionCallback, action *slack.AttachmentAction) *slack.Message {
-	// {owner}/{repo}:{build}
-	value := action.SelectedOptions[0].Value
-
-	originalMessage := message.OriginalMessage
-	originalMessage.Attachments[0].Text = fmt.Sprintf("%sをどうする？", value)
-	originalMessage.Attachments[0].Actions = []slack.AttachmentAction{
-		{
-			Name:  actionBuildRestart,
-			Text:  "Restart",
-			Type:  "button",
-			Value: value,
-			Style: "primary",
-		},
-		{
-			Name:  actionBuildKill,
-			Text:  "Stop",
-			Type:  "button",
-			Value: value,
-			Style: "primary",
-		},
-		{
-			Name:  actionCancel,
-			Text:  "Cancel",
-			Type:  "button",
-			Style: "danger",
-		},
-	}
-
-	return &originalMessage
 }
