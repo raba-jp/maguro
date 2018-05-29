@@ -7,6 +7,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
+	"github.com/vivitInc/maguro/config"
 	"github.com/vivitInc/maguro/drone"
 )
 
@@ -36,6 +37,11 @@ func _main(args []string) int {
 		env.DroneToken,
 		env.RepositoryOwner,
 	)
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Printf("Failed to load config: %s", err)
+		return 1
+	}
 
 	log.Printf("[INFO] Start slack event listening")
 	client := slack.New(env.BotToken)
@@ -44,12 +50,14 @@ func _main(args []string) int {
 		botID:     env.BotID,
 		channelID: env.ChannelID,
 		drone:     d,
+		config:    conf,
 	}
 	go slackListener.ListenAndResponse()
 
 	http.Handle("/maguro/interaction", interactionHandler{
 		verificationToken: env.VerificationToken,
 		drone:             d,
+		config:            conf,
 	})
 	http.HandleFunc("/maguro/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")

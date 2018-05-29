@@ -9,6 +9,8 @@ import (
 
 	"github.com/nlopes/slack"
 	"github.com/vivitInc/maguro/build"
+	"github.com/vivitInc/maguro/config"
+	"github.com/vivitInc/maguro/deploy"
 	"github.com/vivitInc/maguro/drone"
 )
 
@@ -17,6 +19,7 @@ type interactionHandler struct {
 	slack             *slack.Client
 	verificationToken string
 	drone             *drone.Drone
+	config            *config.Config
 }
 
 func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +31,10 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	action := message.Actions[0]
 	switch action.Name {
-	case build.ActionRepoSelect, build.ActionNumberSelect, build.ActionRestart, build.ActionStop:
+	case build.ActionRepoSelect,
+		build.ActionNumberSelect,
+		build.ActionRestart,
+		build.ActionStop:
 		params := build.Params{
 			Slack:   h.slack,
 			Drone:   h.drone,
@@ -41,7 +47,23 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(&message)
 		return
-	case build.ActionCancel:
+	case deploy.ActionRepoSelect,
+		deploy.ActionEnvSelect,
+		deploy.ActionNumberSelect,
+		deploy.ActionConfirm:
+		params := deploy.Params{
+			Slack:        h.slack,
+			Drone:        h.drone,
+			Message:      message,
+			Action:       &action,
+			Repositories: &h.config.Repositories,
+		}
+		message := deploy.Handle(params)
+		w.Header().Add("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(&message)
+		return
+	case build.ActionCancel, deploy.ActionCancel:
 		title := "やっぱりやめた！"
 		responseMessage(w, message.OriginalMessage, title, "")
 		return
