@@ -8,6 +8,34 @@ pipeline:
     when:
       event: pull_request
 
+  deploy:
+    image: vivitInc/magnolia
+    pull: true
+    commands:
+      - export NAMESPACE=default
+      - export KUBERNETES_USER=magnolia
+      - bash ci/init_kubectl.sh
+      - export MAGURO_BOT_TOKEN=$(echo $BOT_TOKEN | base64)
+      - export MAGURO_DUMMY_VERIFICATION_TOKEN=$(echo $VERIFICATION_TOKEN | base64)
+      - export MAGURO_DRONE_TOKEN=$(echo $DRONE_TOKEN | base64)
+      - sed -i -e 's/DUMMY_BOT_TOKEN/'$MAGURO_BOT_TOKEN'/g' deploy/secret.yaml
+      - sed -i -e 's/DUMMY_VERIFICATION_TOKEN/'$MAGURO_VERIFICATION_TOKEN'/g' deploy/secret.yaml
+      - sed -i -e 's/DUMMY_DRONE_TOKEN/'$MAGURO_DRONE_TOKEN'/g' deploy/secret.yaml
+      - kubectl apply -f deploy/secret.yaml
+      - kubectl apply -f deploy/service.yaml
+      - kubectl apply -f deploy/ingress.yaml
+      - kubectl apply -f deploy/deployment.yaml
+    secrets:
+      - bot_token
+      - verification_token
+      - drone_token
+      - kubernetes_server
+      - kubernetes_cert
+      - kubernetes_token
+    when:
+      event: deployment
+      environment: production
+
   slack:
     image: plugins/slack
     webhook: https://hooks.slack.com/services/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

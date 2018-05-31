@@ -1,0 +1,61 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: maguro
+  namespace: bot
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: maguro
+      labels:
+        app: maguro
+      namespace: bot
+    spec:
+      containers:
+      - name: maguro
+        image: vivit/maguro:10
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: BOT_ID
+          value: U90LAKZM0
+        - name: CHANNEL_ID
+          # ping_github_ci
+          # value: CA88ED2AK
+          # sandbox_dev
+          value: CA34H1551
+        - name: DRONE_HOST
+          value: https://ci.dev.hinata.me
+        - name: REPOSITORY_OWNER
+          value: vivitInc
+        - name: REPOSITORY_NAME
+          value: hinata-samsara
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: maguro
+              key: bot_token
+        - name: VERIFICATION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: maguro
+              key: verification_token
+        - name: DRONE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: maguro
+              key: drone_token
+        resources:
+          requests:
+            memory: 16Mi
+            cpu: 20m
+          limits:
+            memory: 32Mi
+            cpu: 40m
+      imagePullSecrets:
+      - name: dockerhub-vivit

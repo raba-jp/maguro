@@ -1,0 +1,17 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: maguro
+  labels:
+    app: maguro
+  namespace: bot
+spec:
+  rules:
+  - host: bot.dev.hinata.me
+    http:
+      paths:
+      - path: /maguro
+        backend:
+          serviceName: maguro
+          servicePort: 3010
