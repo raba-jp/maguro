@@ -1,4 +1,9 @@
 pipeline:
+  entrypoint:
+    image: alpine
+    commands:
+      - echo 'entrypoint'
+
   image_build:
     image: plugins/docker
     repo: vivit/maguro
@@ -9,7 +14,7 @@ pipeline:
       event: pull_request
 
   deploy:
-    image: vivitInc/magnolia
+    image: vivit/magnolia
     pull: true
     commands:
       - export NAMESPACE=default

@@ -62,6 +62,7 @@ func _main(args []string) int {
 	}
 
 	http.Handle("/maguro/interaction", interactionHandler{
+		slack:             client,
 		verificationToken: env.VerificationToken,
 		drone:             d,
 		config:            conf,
