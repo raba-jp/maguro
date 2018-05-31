@@ -76,6 +76,11 @@ func (b *Build) SelectBuild(message *slack.AttachmentActionCallback) *slack.Mess
 		return &originalMessage
 	}
 
+	if len(builds) == 0 {
+		originalMessage.Attachments = Message("実行中のビルドなかったよ！", "green")
+		return &originalMessage
+	}
+
 	options := make([]slack.AttachmentActionOption, len(builds))
 	for i, build := range builds {
 		options[i] = slack.AttachmentActionOption{
