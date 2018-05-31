@@ -19,6 +19,10 @@ repositories:
     env:
       - build_production
       - build_ci
-  - name: 'vivitInv/maguro'
+  - name: 'vivitInc/maguro'
     env:
       - production
+
+schedules:
+  - name: 'vivitInc/github-label-sync'
+    cron: '0 0 0 * * *'

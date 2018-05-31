@@ -32,6 +32,12 @@
   version = "v0.2.0"
 
 [[projects]]
+  name = "github.com/robfig/cron"
+  packages = ["."]
+  revision = "b41be1df696709bb6395fe435af20370037c0b4c"
+  version = "v1.1"
+
+[[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
   revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
@@ -97,6 +103,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "18669805ba5176eee0a8cbfca09c12c7e14b7b29a8f1991b733ba9ad72b8c349"
+  inputs-digest = "ee9cc811ec595e71886c1babcf3e2e126fc8717251cf00fd8a24b76a7d71d73e"
   solver-name = "gps-cdcl"
   solver-version = 1

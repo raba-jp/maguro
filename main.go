@@ -7,6 +7,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
+	"github.com/robfig/cron"
 	"github.com/vivitInc/maguro/config"
 	"github.com/vivitInc/maguro/drone"
 	"go.uber.org/zap"
@@ -85,6 +86,9 @@ func _main(args []string) int {
 		w.Write([]byte("{\"attachments\": [{\"title\": \"loading\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/loading.jpg\"}], \"response_type\": \"in_channel\"}"))
 	})
 
+	logger.Info("Start scheduler")
+	InitScheduler(d, &conf.Schedules)
+
 	logger.Info("Start slack event listening")
 	go slackListener.ListenAndResponse()
 
@@ -113,4 +117,16 @@ func initEnvConfig() (*envConfig, error) {
 		return nil, err
 	}
 	return &env, nil
+}
+
+func InitScheduler(client *drone.Drone, schedules *[]config.Schedule) {
+	cron := cron.New()
+	for _, s := range *schedules {
+		logger.Info("Register function", zap.String("repo", s.Name), zap.String("cron", s.Cron))
+		repo := drone.GetRepoFromFullName(s.Name)
+		cron.AddFunc(s.Cron, func() {
+			client.RestartSucceededMasterBuild(*repo)
+		})
+	}
+	cron.Start()
 }
