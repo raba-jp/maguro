@@ -1,6 +1,8 @@
 package drone
 
 import (
+	"fmt"
+
 	"github.com/drone/drone-go/drone"
 	"golang.org/x/oauth2"
 )
@@ -104,4 +106,28 @@ func (d *Drone) GetBuild(repo *Repo, number int) (*Build, error) {
 func (d *Drone) Deploy(repo Repo, number int, env string, params map[string]string) (*drone.Build, error) {
 	build, err := d.client.Deploy(repo.Owner, repo.Name, number, env, params)
 	return build, err
+}
+
+func (d *Drone) RestartSucceededMasterBuild(repo Repo) {
+	list, err := d.client.BuildList(repo.Owner, repo.Name)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+
+	var build *drone.Build
+	for _, b := range list {
+		if b.Branch != "master" {
+			continue
+		}
+		if b.Status != "success" {
+			continue
+		}
+		build = b
+	}
+
+	if build == nil {
+		return
+	}
+
+	_, err = d.client.BuildStart(repo.Owner, repo.Name, build.Number, nil)
 }

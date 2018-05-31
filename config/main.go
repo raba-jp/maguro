@@ -10,11 +10,17 @@ import (
 type Config struct {
 	Channels     []string     `yaml:"channels"`
 	Repositories []Repository `yaml:"repositories"`
+	Schedules    []Schedule   `yaml:"schedules"`
 }
 
 type Repository struct {
 	Name string   `yaml:"name"`
 	Env  []string `yaml:"env"`
+}
+
+type Schedule struct {
+	Name string `yaml:"name"`
+	Cron string `yaml:"cron"`
 }
 
 func LoadConfig() (*Config, error) {
