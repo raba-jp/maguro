@@ -34,10 +34,10 @@ func (d *Drone) GetRepositories() ([]Repo, error) {
 	return list, nil
 }
 
-func (d *Drone) GetRunningBuildNumber(repo *Repo) []*Build {
+func (d *Drone) GetRunningBuildNumber(repo *Repo) ([]*Build, error) {
 	builds, err := d.client.BuildList(repo.Owner, repo.Name)
 	if err != nil {
-		return make([]*Build, 0)
+		return nil, err
 	}
 
 	numbers := []*Build{}
@@ -51,7 +51,7 @@ func (d *Drone) GetRunningBuildNumber(repo *Repo) []*Build {
 		}
 	}
 
-	return numbers
+	return numbers, nil
 }
 
 func (d *Drone) RestartBuild(repo Repo, number int) error {
@@ -67,10 +67,10 @@ func (d *Drone) KillBuild(repo Repo, number int) error {
 	return d.client.BuildKill(repo.Owner, repo.Name, number)
 }
 
-func (d *Drone) GetSucceededBuild(repo *Repo) []*Build {
+func (d *Drone) GetSucceededBuilds(repo *Repo) ([]*Build, error) {
 	list, err := d.client.BuildList(repo.Owner, repo.Name)
 	if err != nil {
-		return make([]*Build, 0)
+		return nil, err
 	}
 
 	builds := []*Build{}
@@ -83,7 +83,19 @@ func (d *Drone) GetSucceededBuild(repo *Repo) []*Build {
 			})
 		}
 	}
-	return builds
+	return builds, nil
+}
+
+func (d *Drone) GetSucceededBuild(repo *Repo, number int) (*Build, error) {
+	b, err := d.client.Build(repo.Owner, repo.Name, number)
+	if err != nil {
+		return nil, err
+	}
+	return &Build{
+		b.Number,
+		string([]rune(b.Commit)[:6]),
+		b.Message,
+	}, nil
 }
 
 func (d *Drone) Deploy(repo Repo, number int, env string, params map[string]string) (*drone.Build, error) {
