@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/nlopes/slack"
 	"github.com/vivitInc/maguro/config"
 	"github.com/vivitInc/maguro/drone"
+	"go.uber.org/zap"
 )
 
 type envConfig struct {
@@ -22,28 +23,35 @@ type envConfig struct {
 	RepositoryOwner   string `envconfig:"REPOSITORY_OWNER" required:"true"`
 }
 
+var logger *zap.Logger
+
 func main() {
 	os.Exit(_main(os.Args[1:]))
 }
 
 func _main(args []string) int {
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		log.Printf("[ERROR] Failed to process env var: %s", err)
+	if err := initLogger(); err != nil {
+		fmt.Printf("Failed to initialize logger %s", err)
 		return 1
 	}
+
+	env, err := initEnvConfig()
+	if err != nil {
+		logger.Error("Failed to process env var", zap.String("detail", err.Error()))
+		return 1
+	}
+
+	conf, err := config.LoadConfig()
+	if err != nil {
+		logger.Error("Failed to load config", zap.String("detail", err.Error()))
+		return 1
+	}
+
 	d := drone.NewDrone(
 		env.DroneHost,
 		env.DroneToken,
 		env.RepositoryOwner,
 	)
-	conf, err := config.LoadConfig()
-	if err != nil {
-		log.Printf("Failed to load config: %s", err)
-		return 1
-	}
-
-	log.Printf("[INFO] Start slack event listening")
 	client := slack.New(env.BotToken)
 	slackListener := &SlackListener{
 		client:    client,
@@ -52,7 +60,6 @@ func _main(args []string) int {
 		drone:     d,
 		config:    conf,
 	}
-	go slackListener.ListenAndResponse()
 
 	http.Handle("/maguro/interaction", interactionHandler{
 		verificationToken: env.VerificationToken,
@@ -64,7 +71,6 @@ func _main(args []string) int {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("{\"status\": \"OK\"}"))
 	})
-
 	// Slack slash commmands
 	http.Handle("/maguro/public/", http.StripPrefix("/maguro/public/", http.FileServer(http.Dir("./public"))))
 	http.HandleFunc("/maguro/toyama", func(w http.ResponseWriter, r *http.Request) {
@@ -72,22 +78,38 @@ func _main(args []string) int {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("{\"attachments\": [{\"title\": \"toyama\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/toyama.jpg\"}], \"response_type\": \"in_channel\"}"))
 	})
-	http.HandleFunc("/maguro/tomoka", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{\"attachments\": [{\"title\": \"tomoka\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/tomoka.png\"}], \"response_type\": \"in_channel\"}"))
-	})
 	http.HandleFunc("/maguro/loading", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("{\"attachments\": [{\"title\": \"loading\", \"image_url\": \"https://bot.dev.hinata.me/maguro/public/loading.jpg\"}], \"response_type\": \"in_channel\"}"))
 	})
 
-	log.Printf("[INFO] Server listening on :%s", env.Port)
+	logger.Info("Start slack event listening")
+	go slackListener.ListenAndResponse()
+
+	logger.Info("Server listening", zap.String("port", env.Port))
 	if err := http.ListenAndServe(":"+env.Port, nil); err != nil {
-		log.Printf("[ERROR] %s", err)
+		logger.Error("Any error raised", zap.String("detail", err.Error()))
 		return 1
 	}
 
 	return 0
+}
+
+func initLogger() error {
+	var err error
+	logger, err = zap.NewProduction()
+	if err != nil {
+		return err
+	}
+	defer logger.Sync()
+	return nil
+}
+
+func initEnvConfig() (*envConfig, error) {
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		return nil, err
+	}
+	return &env, nil
 }

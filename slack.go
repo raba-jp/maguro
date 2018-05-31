@@ -2,15 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/nlopes/slack"
-	"github.com/vivitInc/maguro/build"
 	"github.com/vivitInc/maguro/config"
-	"github.com/vivitInc/maguro/deploy"
 	"github.com/vivitInc/maguro/drone"
-	"github.com/vivitInc/maguro/tomoka"
+	"go.uber.org/zap"
 )
 
 type SlackListener struct {
@@ -31,48 +28,51 @@ func (s *SlackListener) ListenAndResponse() {
 	for msg := range rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			if err := s.handleMessageEvent(ev); err != nil {
-				log.Printf("[ERROR] Failed to handle message: %s", err)
-			}
+			s.handleMessageEvent(ev)
 		}
 	}
 }
 
-func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
-	// Only response in specific channel. Ignore else.
-	if ev.Channel != s.channelID {
-		log.Printf("%s %s", ev.Channel, ev.Msg.Text)
-		return nil
-	}
-
+func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) {
 	// Only response mention to bot. Ignore else.
 	if !strings.HasPrefix(ev.Msg.Text, fmt.Sprintf("<@%s> ", s.botID)) {
-		return nil
+		return
+	}
+
+	var allowed = false
+	for _, c := range s.config.Channels {
+		if c == ev.Channel {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		logger.Info(
+			"Channel ID don't match",
+			zap.String("channel", ev.Channel),
+			zap.String("text", ev.Msg.Text),
+		)
+		return
 	}
 
 	// Parse message
 	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
 	if len(m) == 0 {
-		return fmt.Errorf("invalid message")
+		logger.Error("Invalid message", zap.String("detail", ev.Msg.Text))
+		return
 	}
 
 	switch m[0] {
 	case "build":
-		params := build.Params{Slack: s.client, Drone: s.drone, Event: ev}
-		build.SelectRepo(&params)
+		b := Build{slack: s.client, drone: s.drone}
+		b.SelectRepo(ev)
+		return
 	case "tomoka", "ともか":
-		params := tomoka.Params{Slack: s.client, Event: ev}
-		if err := tomoka.Handle(&params); err != nil {
-			log.Printf("failed to handle tomoka: %s", err)
-			return err
-		}
+		Tomoka(s.client, ev)
+		return
 	case "deploy":
-		params := deploy.Params{Slack: s.client, Drone: s.drone, Event: ev, Repositories: &s.config.Repositories}
-		if err := deploy.SelectRepo(&params); err != nil {
-			log.Printf("failed to handle deploy: %s", err)
-			return err
-		}
+		d := Deploy{slack: s.client, drone: s.drone, config: s.config}
+		d.SelectRepo(ev)
+		return
 	}
-
-	return nil
 }

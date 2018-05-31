@@ -14,3 +14,7 @@ repositories:
   - name: 'vivitInc/vivit-corporate'
     env:
       - production
+  - name: 'vivitInc/clover'
+    env:
+      - build_production
+      - build_ci
