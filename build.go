@@ -15,6 +15,21 @@ type Build struct {
 	drone *drone.Drone
 }
 
+func BuildAttachmentFileds(name, build string) []slack.AttachmentField {
+	return []slack.AttachmentField{
+		slack.AttachmentField{
+			Title: "リポジトリ",
+			Value: name,
+			Short: true,
+		},
+		slack.AttachmentField{
+			Title: "ビルド",
+			Value: build,
+			Short: false,
+		},
+	}
+}
+
 func (b *Build) SelectRepo(event *slack.MessageEvent) {
 	repos, err := b.drone.GetRepositories()
 	if err != nil {
@@ -57,7 +72,7 @@ func (b *Build) SelectBuild(message *slack.AttachmentActionCallback) *slack.Mess
 	builds, err := b.drone.GetRunningBuildNumber(repo)
 	if err != nil {
 		logger.Error("Failed to get running build", zap.String("detail", err.Error()))
-		originalMessage.Attachments = Message(fmt.Sprintf("エラーが発生したよ！\n%s", err))
+		originalMessage.Attachments = Message(fmt.Sprintf("エラーが発生したよ！\n%s", err), "danger")
 		return &originalMessage
 	}
 
@@ -70,6 +85,7 @@ func (b *Build) SelectBuild(message *slack.AttachmentActionCallback) *slack.Mess
 	}
 
 	originalMessage.Attachments[0].Text = fmt.Sprintf("%sのどのビルド？", value)
+	originalMessage.Attachments[0].Fields = BuildAttachmentFileds(value, "")
 	originalMessage.Attachments[0].Actions = []slack.AttachmentAction{
 		SelectMenu(BuildActionSelectBuild, options),
 		CancelButton(),
@@ -80,9 +96,11 @@ func (b *Build) SelectBuild(message *slack.AttachmentActionCallback) *slack.Mess
 func (b *Build) SelectAction(message *slack.AttachmentActionCallback) *slack.Message {
 	// Format: {owner}/{repo}:{build}
 	value := message.Actions[0].SelectedOptions[0].Value
+	strs := strings.Split(value, ":")
 
 	originalMessage := message.OriginalMessage
-	originalMessage.Attachments[0].Text = fmt.Sprintf("%sをどうする？", value)
+	originalMessage.Attachments[0].Text = "どうする？"
+	originalMessage.Attachments[0].Fields = BuildAttachmentFileds(strs[0], strs[1])
 	originalMessage.Attachments[0].Actions = []slack.AttachmentAction{
 		PrimaryButton(BuildActionRestart, "再実行", value),
 		PrimaryButton(BuildActionStop, "停止", value),
@@ -98,15 +116,16 @@ func (b *Build) Restart(message *slack.AttachmentActionCallback) *slack.Message 
 	repo := drone.GetRepoFromFullName(strs[0])
 	number, err := strconv.Atoi(strs[1])
 	if err != nil {
-		originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行できなかった...", number))
+		originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行できなかった...", number), "danger")
 		return &originalMessage
 	}
 	if err := b.drone.RestartBuild(*repo, number); err != nil {
-		originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行できなかった...", number))
+		originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行できなかった...", number), "danger")
 		return &originalMessage
 	}
 
-	originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行したよ！", number))
+	originalMessage.Attachments = Message(fmt.Sprintf("%dを再実行したよ！", number), "good")
+	originalMessage.Attachments[0].Fields = BuildAttachmentFileds(strs[0], strs[1])
 	return &originalMessage
 }
 
@@ -117,14 +136,15 @@ func (b *Build) Stop(message *slack.AttachmentActionCallback) *slack.Message {
 
 	build, err := strconv.Atoi(strs[1])
 	if err != nil {
-		originalMessage.Attachments = Message("止めるの失敗した...")
+		originalMessage.Attachments = Message("止めるの失敗した...", "danger")
 		return &originalMessage
 	}
 	if err := b.drone.KillBuild(*repo, build); err != nil {
-		originalMessage.Attachments = Message(fmt.Sprintf("%dを止めるの失敗した...", build))
+		originalMessage.Attachments = Message(fmt.Sprintf("%dを止めるの失敗した...", build), "danger")
 		return &originalMessage
 	}
 
-	originalMessage.Attachments = Message(fmt.Sprintf("%dを止めたよ！", build))
+	originalMessage.Attachments = Message(fmt.Sprintf("%dを止めたよ！", build), "good")
+	originalMessage.Attachments[0].Fields = BuildAttachmentFileds(strs[0], strs[1])
 	return &originalMessage
 }

@@ -47,6 +47,7 @@ func (d *Drone) GetRunningBuildNumber(repo *Repo) ([]*Build, error) {
 				b.Number,
 				string([]rune(b.Commit)[:6]),
 				b.Message,
+				b.Status,
 			})
 		}
 	}
@@ -80,13 +81,14 @@ func (d *Drone) GetSucceededBuilds(repo *Repo) ([]*Build, error) {
 				b.Number,
 				string([]rune(b.Commit)[:6]),
 				b.Message,
+				b.Status,
 			})
 		}
 	}
 	return builds, nil
 }
 
-func (d *Drone) GetSucceededBuild(repo *Repo, number int) (*Build, error) {
+func (d *Drone) GetBuild(repo *Repo, number int) (*Build, error) {
 	b, err := d.client.Build(repo.Owner, repo.Name, number)
 	if err != nil {
 		return nil, err
@@ -95,6 +97,7 @@ func (d *Drone) GetSucceededBuild(repo *Repo, number int) (*Build, error) {
 		b.Number,
 		string([]rune(b.Commit)[:6]),
 		b.Message,
+		b.Status,
 	}, nil
 }
 

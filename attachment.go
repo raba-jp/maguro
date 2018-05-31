@@ -29,11 +29,12 @@ func CancelButton() slack.AttachmentAction {
 	}
 }
 
-func Message(text string) []slack.Attachment {
+func Message(text, color string) []slack.Attachment {
 	return []slack.Attachment{
 		slack.Attachment{
 			Text:    text,
 			Actions: []slack.AttachmentAction{},
+			Color:   color,
 		},
 	}
 }

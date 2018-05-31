@@ -49,7 +49,7 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		responseMessage(w, deploy.Deploy(message))
 	case ActionCancel:
 		originalMessage := message.OriginalMessage
-		originalMessage.Attachments = Message("やっぱりやめた！")
+		originalMessage.Attachments = Message("やっぱりやめた！", "")
 		responseMessage(w, &originalMessage)
 	default:
 		logger.Error("Invalid action", zap.String("action", action.Name))
