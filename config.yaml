@@ -4,9 +4,6 @@ channels:
   - G0H5UB23W # deploy
 
 repositories:
-  - name: 'vivitInc/maguro'
-    env:
-      - production
   - name: 'vivitInc/magnolia'
     env:
       - ingress
@@ -19,6 +16,9 @@ repositories:
     env:
       - build_production
       - build_ci
+  - name: 'vivitInc/vivit-lambda-functions'
+    env:
+      - production
   - name: 'vivitInc/maguro'
     env:
       - production
