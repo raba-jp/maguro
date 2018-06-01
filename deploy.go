@@ -229,21 +229,25 @@ func (d *Deploy) notice(repo drone.Repo, env, from, target, channel, url string)
 			postMessage(params)
 			break
 		}
-		if build.Status != "success" {
+		switch build.Status {
+		case "success":
+			postMessage(params)
+			d.slack.PostMessage(channel, "", slack.PostMessageParameters{
+				Attachments: []slack.Attachment{
+					slack.Attachment{
+						Text:  "<!here> デプロイ終わったよー",
+						Color: "good",
+					},
+				},
+			})
+			break
+		case "running":
 			time.Sleep(5)
 			continue
+		case "failure":
+			params.Attachments[0].Text = "デプロイに失敗したみたい..."
+			postMessage(params)
+			break
 		}
-
-		postMessage(params)
-		d.slack.PostMessage(channel, "", slack.PostMessageParameters{
-			Attachments: []slack.Attachment{
-				slack.Attachment{
-					Text:  "<!here> デプロイ終わったよー",
-					Color: "good",
-				},
-			},
-		})
-		break
-
 	}
 }
