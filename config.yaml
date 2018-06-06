@@ -12,6 +12,7 @@ repositories:
   - name: 'vivitInc/vivit-corporate'
     env:
       - production
+      - staging
   - name: 'vivitInc/clover'
     env:
       - build_production
