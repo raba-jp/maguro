@@ -226,13 +226,13 @@ func (d *Deploy) notice(repo drone.Repo, env, from, target, channel, url string)
 		build, err := d.drone.GetBuild(&repo, num)
 		if err != nil {
 			params.Attachments[0].Text = "デプロイに失敗したみたい..."
-			params.Attachments[0].Color = "warning"
+			params.Attachments[0].Color = "danger"
 			postMessage(params)
 			break
 		}
 		if build.Status == "failure" {
 			params.Attachments[0].Text = "デプロイに失敗したみたい..."
-			params.Attachments[0].Color = "warning"
+			params.Attachments[0].Color = "danger"
 			postMessage(params)
 			break
 		}
