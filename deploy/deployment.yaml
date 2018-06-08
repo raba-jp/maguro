@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: maguro
-        image: vivit/maguro:18
+        image: vivit/maguro:19
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

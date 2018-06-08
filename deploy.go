@@ -226,11 +226,21 @@ func (d *Deploy) notice(repo drone.Repo, env, from, target, channel, url string)
 		build, err := d.drone.GetBuild(&repo, num)
 		if err != nil {
 			params.Attachments[0].Text = "デプロイに失敗したみたい..."
+			params.Attachments[0].Color = "warning"
 			postMessage(params)
 			break
 		}
-		switch build.Status {
-		case "success":
+		if build.Status == "failure" {
+			params.Attachments[0].Text = "デプロイに失敗したみたい..."
+			params.Attachments[0].Color = "warning"
+			postMessage(params)
+			break
+		}
+		if build.Status == "running" {
+			time.Sleep(5)
+			continue
+		}
+		if build.Status == "success" {
 			postMessage(params)
 			d.slack.PostMessage(channel, "", slack.PostMessageParameters{
 				Attachments: []slack.Attachment{
@@ -240,13 +250,6 @@ func (d *Deploy) notice(repo drone.Repo, env, from, target, channel, url string)
 					},
 				},
 			})
-			break
-		case "running":
-			time.Sleep(5)
-			continue
-		case "failure":
-			params.Attachments[0].Text = "デプロイに失敗したみたい..."
-			postMessage(params)
 			break
 		}
 	}
