@@ -1,11 +1,32 @@
 pipeline:
   entrypoint:
     image: alpine
+    group: ci
     commands:
       - echo 'entrypoint'
+    when:
+      event: push
+
+  lint:
+    image: golang:1.10-alpine
+    commands:
+      - apk add --update git
+      - go get -u github.com/haya14busa/reviewdog/cmd/reviewdog
+      - go get -u github.com/golang/lint/golint
+      - go get -u github.com/kisielk/errcheck
+      - go get -u honnef.co/go/tools/cmd/unused
+      - go get -u honnef.co/go/tools/cmd/gosimple
+      - go get -u honnef.co/go/tools/cmd/staticcheck
+      - reviewdog -version
+      - reviewdog -conf=./.reviewdog.yml -reporter=github-pr-check
+    secrets:
+      - reviewdog_token
+    when:
+      event: pull_request
 
   image_build:
     image: plugins/docker
+    group: ci
     repo: vivit/maguro
     secrets: [ docker_username, docker_password ]
     tags:

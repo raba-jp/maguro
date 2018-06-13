@@ -1,0 +1,23 @@
+runner:
+  golint:
+    cmd: golint ./...
+    errorformat:
+      - "%f:%l:%c: %m"
+  govet:
+    cmd: go tool vet -all -shadowstrict . 2>&1
+  unused:
+    cmd: unused ./...
+    errorformat:
+      - "%f:%l:%c: %m"
+  errcheck:
+    cmd: errcheck -asserts -ignoretests -blank ./...
+    errorformat:
+      - "%f:%l:%c:%m"
+  gosimple:
+    cmd: gosimple ./...
+    errorformat:
+      - "%f:%l:%c: %m"
+  staticcheck:
+    cmd: staticcheck ./...
+    errorformat:
+      - "%f:%l:%c: %m"
